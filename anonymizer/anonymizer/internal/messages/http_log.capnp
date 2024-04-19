@@ -1,5 +1,9 @@
 @0xf42cd342ff520eca;
 
+using Go = import "/go.capnp";
+$Go.package("messages");
+$Go.import("github.com/tchap/cdn/anonymizer/anonymizer/internal/messages");
+
 struct HttpLogRecord {
   timestampEpochMilli @0 :UInt64;
   resourceId @1 :UInt64;

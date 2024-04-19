@@ -109,6 +109,15 @@ services:
         hard: 262144
     container_name: clickhouse
 
+  clickhouse-client:
+    image: yandex/clickhouse-client
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    container_name: clickhouse-client
+    depends_on:
+      - clickhouse-server
+    command: --host clickhouse-server
+
   ch-proxy:
     build: docker/ch-proxy
     ports:
@@ -124,7 +133,25 @@ services:
     restart: always
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
-      KAFKA_PRODUCER_DELAY_MS: 5000
+      KAFKA_PRODUCER_DELAY_MS: 10
     depends_on:
       - broker
     container_name: log-producer
+
+  anonymizer:
+    build: anonymizer
+    restart: always
+    environment:
+      KAFKA_BROKERS: "broker:29092"
+      KAFKA_TOPIC: http_log
+      KAFKA_CLIENT_ID: anonymizer.1
+      KAFKA_CONSUMER_GROUP: anonymizer
+      KAFKA_FETCH_MAX_MB: 50
+      CLICKHOUSE_URL: "http://clickhouse-server:8123/"
+      CLICKHOUSE_TABLE_NAME: http_log
+      CLICKHOUSE_PUSH_PERIOD: 65s
+      CLICKHOUSE_PUSH_RETRY_COUNT: 5
+    depends_on:
+      - broker
+      - ch-proxy
+    container_name: anonymizer
