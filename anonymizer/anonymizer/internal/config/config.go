@@ -22,7 +22,8 @@ type Config struct {
 
 	ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
 
-	LogLevel zapcore.Level `envconfig:"LOG_LEVEL" default:"info"`
+	LogLevel      zapcore.Level `envconfig:"LOG_LEVEL" default:"info"`
+	KafkaLogLevel zapcore.Level `envconfig:"KAFKA_LOG_LEVEL" default:"error"`
 }
 
 func Load() (*Config, error) {

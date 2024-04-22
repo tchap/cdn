@@ -13,14 +13,18 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.19 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
 	capnproto.org/go/capnp/v3 v3.0.0-alpha-29
+	github.com/stretchr/testify v1.9.0
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
