@@ -133,7 +133,7 @@ services:
     restart: always
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
-      KAFKA_PRODUCER_DELAY_MS: 1000
+      KAFKA_PRODUCER_DELAY_MS: 10
     depends_on:
       - broker
     container_name: log-producer
@@ -150,6 +150,7 @@ services:
       CLICKHOUSE_URL: "http://ch-proxy:8124/"
       CLICKHOUSE_TABLE_NAME: http_log
       CLICKHOUSE_PUSH_PERIOD: 65s
+      CLICKHOUSE_QUERY_MAX_SIZE_MB: 1
       CLICKHOUSE_PUSH_RETRY_COUNT: 5
     depends_on:
       - broker

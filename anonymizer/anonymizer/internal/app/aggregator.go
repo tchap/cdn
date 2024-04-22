@@ -7,13 +7,16 @@ import (
 )
 
 type Aggregator struct {
-	query    bytes.Buffer
-	rowCount int
+	tableName string
+	query     bytes.Buffer
+	rowCount  int
 }
 
 func NewAggregator(tableName string) *Aggregator {
-	agg := &Aggregator{}
-	fmt.Fprintf(&agg.query, "INSERT INTO %s VALUES ", tableName)
+	agg := &Aggregator{
+		tableName: tableName,
+	}
+	agg.ResetState()
 	return agg
 }
 
@@ -41,4 +44,14 @@ func (agg *Aggregator) AppendRecord(r *LogRecord) error {
 
 func (agg *Aggregator) Aggregate() *bytes.Buffer {
 	return &agg.query
+}
+
+func (agg *Aggregator) StateSize() int {
+	return agg.query.Len()
+}
+
+func (agg *Aggregator) ResetState() {
+	agg.query.Reset()
+	fmt.Fprintf(&agg.query, "INSERT INTO %s VALUES ", agg.tableName)
+	agg.rowCount = 0
 }

@@ -43,12 +43,11 @@ func New(
 		logger.Named("pipeline"),
 		kafkaClient,
 		c.KafkaTopic,
-		NewMessageParser(logger.Named("parser")),
+		NewMessageDecoder(logger.Named("parser")),
 		LogRecordAnonymizer{},
-		func() pipeline.AggregationWindow[*LogRecord, *bytes.Buffer] {
-			return NewAggregator(c.ClickHouseTableName)
-		},
+		NewAggregator(c.ClickHouseTableName),
 		c.ClickHousePushPeriod,
+		c.ClickHouseQueryMaxSizeMB*1024*1024,
 		NewHTTPPostPusher(
 			logger.Named("http_post_pusher"), c.ClickHouseURL, c.ClickHousePushRetryCount, c.ClickHousePushPeriod,
 		),

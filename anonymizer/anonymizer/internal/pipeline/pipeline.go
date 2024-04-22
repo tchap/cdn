@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	stderrors "errors"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,8 +15,8 @@ import (
 
 var ErrSkipRecord = stderrors.New("skip record")
 
-type MessageParser[Record any] interface {
-	ParseMessage(*kgo.Record) (Record, error)
+type MessageDecoder[Record any] interface {
+	DecodeMessage(*kgo.Record) (Record, error)
 }
 
 type RecordTransformer[Record any] interface {
@@ -25,9 +26,9 @@ type RecordTransformer[Record any] interface {
 type AggregationWindow[Record, State any] interface {
 	AppendRecord(record Record) error
 	Aggregate() State
+	StateSize() int
+	ResetState()
 }
-
-type AggregationWindowConstructor[Record, State any] func() AggregationWindow[Record, State]
 
 type Pusher[AggregationState any] interface {
 	Push(ctx context.Context, state AggregationState, windowSize int) error
@@ -40,15 +41,20 @@ type pushContext[AggregationState any] struct {
 }
 
 type Pipeline[MessageRecord, AggregationState any] struct {
-	logger               *zap.Logger
-	kafka                *kgo.Client
-	kafkaTopicName       string
-	newAggregationWindow AggregationWindowConstructor[MessageRecord, AggregationState]
-	aggregationPeriod    time.Duration
-	messageParser        MessageParser[MessageRecord]
-	recordTransformer    RecordTransformer[MessageRecord]
-	pusher               Pusher[AggregationState]
-	shutdownTimeout      time.Duration
+	logger *zap.Logger
+
+	kafka          *kgo.Client
+	kafkaTopicName string
+
+	aggregationWindow  AggregationWindow[MessageRecord, AggregationState]
+	aggregationPeriod  time.Duration
+	aggregationMaxSize int
+
+	messageDecoder    MessageDecoder[MessageRecord]
+	recordTransformer RecordTransformer[MessageRecord]
+	pusher            Pusher[AggregationState]
+
+	shutdownTimeout time.Duration
 
 	consumerOutputCh chan *kgo.Record
 	pusherInputCh    chan pushContext[AggregationState]
@@ -60,24 +66,26 @@ func New[MessageRecord, AggregationState any](
 	logger *zap.Logger,
 	kafkaClient *kgo.Client,
 	kafkaTopicName string,
-	messageParser MessageParser[MessageRecord],
+	messageDecoder MessageDecoder[MessageRecord],
 	recordTransformer RecordTransformer[MessageRecord],
-	newAggregationWindow AggregationWindowConstructor[MessageRecord, AggregationState],
+	aggregationWindow AggregationWindow[MessageRecord, AggregationState],
 	aggregationPeriod time.Duration,
+	aggregationMaxSize int,
 	pusher Pusher[AggregationState],
 	shutdownTimeout time.Duration,
 ) *Pipeline[MessageRecord, AggregationState] {
 	p := &Pipeline[MessageRecord, AggregationState]{
-		logger:               logger,
-		kafka:                kafkaClient,
-		kafkaTopicName:       kafkaTopicName,
-		messageParser:        messageParser,
-		recordTransformer:    recordTransformer,
-		newAggregationWindow: newAggregationWindow,
-		aggregationPeriod:    aggregationPeriod,
-		pusher:               pusher,
-		consumerOutputCh:     make(chan *kgo.Record, 1),
-		pusherInputCh:        make(chan pushContext[AggregationState], 1),
+		logger:             logger,
+		kafka:              kafkaClient,
+		kafkaTopicName:     kafkaTopicName,
+		messageDecoder:     messageDecoder,
+		recordTransformer:  recordTransformer,
+		aggregationWindow:  aggregationWindow,
+		aggregationPeriod:  aggregationPeriod,
+		aggregationMaxSize: aggregationMaxSize,
+		pusher:             pusher,
+		consumerOutputCh:   make(chan *kgo.Record, 1),
+		pusherInputCh:      make(chan pushContext[AggregationState]),
 	}
 	p.t.Go(p.consumerLoop)
 	p.t.Go(p.aggregatorLoop)
@@ -152,12 +160,14 @@ func (p *Pipeline[MessageRecord, AggregationState]) aggregatorLoop() error {
 	defer ticker.Stop()
 
 	var (
+		inputCh       <-chan *kgo.Record
 		agg           AggregationWindow[MessageRecord, AggregationState]
 		windowSize    int
 		commitOffsets map[int32]kgo.EpochOffset
 	)
 	resetWindow := func() {
-		agg = p.newAggregationWindow()
+		inputCh = p.consumerOutputCh
+		agg.ResetState()
 		windowSize = 0
 		commitOffsets = make(map[int32]kgo.EpochOffset)
 	}
@@ -165,9 +175,9 @@ func (p *Pipeline[MessageRecord, AggregationState]) aggregatorLoop() error {
 
 	for {
 		select {
-		case m := <-p.consumerOutputCh:
+		case m := <-inputCh:
 			// Parse the message.
-			r, err := p.messageParser.ParseMessage(m)
+			r, err := p.messageDecoder.DecodeMessage(m)
 			if err != nil {
 				if stderrors.Is(err, ErrSkipRecord) {
 					continue
@@ -197,12 +207,23 @@ func (p *Pipeline[MessageRecord, AggregationState]) aggregatorLoop() error {
 
 			windowSize++
 
+			// In case the aggregated state is larger than the limit, stop accepting messages.
+			if p.aggregationMaxSize > 0 && agg.StateSize() >= p.aggregationMaxSize {
+				logger.Warn(
+					"State buffer size exceeded, pausing message processing...",
+					zap.Int("limit_bytes", p.aggregationMaxSize),
+				)
+				inputCh = nil
+			}
+
 		case <-ticker.C:
 			// Do nothing in case there are no records buffered.
 			if windowSize == 0 {
-				logger.Info("Buffer empty, skipping push...")
+				logger.Info("State buffer empty, skipping push...")
 				continue
 			}
+
+			fmt.Println(p.aggregationMaxSize, agg.StateSize())
 
 			// Forward to the pusher.
 			select {

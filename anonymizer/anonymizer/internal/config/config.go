@@ -15,10 +15,11 @@ type Config struct {
 	KafkaConsumerGroup string   `envconfig:"KAFKA_CONSUMER_GROUP" required:"true"`
 	KafkaFetchMaxMB    int32    `envconfig:"KAFKA_FETCH_MAX_MB"   required:"true"`
 
-	ClickHouseURL            string        `envconfig:"CLICKHOUSE_URL"              required:"true"`
-	ClickHouseTableName      string        `envconfig:"CLICKHOUSE_TABLE_NAME"       required:"true"`
-	ClickHousePushPeriod     time.Duration `envconfig:"CLICKHOUSE_PUSH_PERIOD"      required:"true"`
-	ClickHousePushRetryCount int           `envconfig:"CLICKHOUSE_PUSH_RETRY_COUNT" required:"true"`
+	ClickHouseURL            string        `envconfig:"CLICKHOUSE_URL"               required:"true"`
+	ClickHouseTableName      string        `envconfig:"CLICKHOUSE_TABLE_NAME"        required:"true"`
+	ClickHouseQueryMaxSizeMB int           `envconfig:"CLICKHOUSE_QUERY_MAX_SIZE_MB" required:"true"`
+	ClickHousePushPeriod     time.Duration `envconfig:"CLICKHOUSE_PUSH_PERIOD"       required:"true"`
+	ClickHousePushRetryCount int           `envconfig:"CLICKHOUSE_PUSH_RETRY_COUNT"  required:"true"`
 
 	ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"5s"`
 

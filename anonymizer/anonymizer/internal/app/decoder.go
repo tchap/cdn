@@ -25,15 +25,15 @@ type LogRecord struct {
 	URL                 string
 }
 
-type MessageParser struct {
+type MessageDecoder struct {
 	logger *zap.Logger
 }
 
-func NewMessageParser(logger *zap.Logger) *MessageParser {
-	return &MessageParser{logger: logger}
+func NewMessageDecoder(logger *zap.Logger) *MessageDecoder {
+	return &MessageDecoder{logger: logger}
 }
 
-func (p MessageParser) ParseMessage(r *kgo.Record) (*LogRecord, error) {
+func (p MessageDecoder) DecodeMessage(r *kgo.Record) (*LogRecord, error) {
 	// Unmarshal.
 	msg, err := capnp.Unmarshal(r.Value)
 	if err != nil {
