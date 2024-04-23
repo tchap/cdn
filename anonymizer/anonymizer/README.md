@@ -132,6 +132,7 @@ XXX: Describe the database scheme.
 - [ ] The service simply crashes when it fails to push N times. Infinite retry is also an option...
 - [ ] Handle rate limit exceeded more explicitly, not just using generic retry then crash.
       The best would be to stop consuming aggregate state for a while when rate limit exceeded.
+- [ ] Actually we can merge the consumer and aggregator loops into one and save a channel send.
 - [ ] Tests!
 
 ## Development
