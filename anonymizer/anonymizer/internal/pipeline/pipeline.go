@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	stderrors "errors"
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -223,8 +222,6 @@ func (p *Pipeline[MessageRecord, AggregationState]) aggregatorLoop() error {
 				continue
 			}
 
-			fmt.Println(p.aggregationMaxSize, agg.StateSize())
-
 			// Forward to the pusher.
 			select {
 			case p.pusherInputCh <- pushContext[AggregationState]{
@@ -266,7 +263,7 @@ func (p *Pipeline[MessageRecord, AggregationState]) pusherLoop() error {
 			commitErrCh := make(chan error, 1)
 			p.kafka.CommitOffsets(ctx, map[string]map[int32]kgo.EpochOffset{
 				p.kafkaTopicName: push.CommitOffsets,
-			}, func(_ *kgo.Client, _ *kmsg.OffsetCommitRequest, resp *kmsg.OffsetCommitResponse, err error) {
+			}, func(_ *kgo.Client, _ *kmsg.OffsetCommitRequest, _ *kmsg.OffsetCommitResponse, err error) {
 				if ctxErr := ctx.Err(); ctxErr != nil {
 					commitErrCh <- ctxErr
 				} else {
