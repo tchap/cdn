@@ -12,6 +12,8 @@ and the minimal tree depth is thus 2.
 
 - Scope is currently stored in each node. This can be computed when walking the tree.
 - `internal/routingtree` could be refactored a bit, perhaps to put IPNet and bit operations to a separate package.
+- `Router.DeleteRoute` is not implemented yet.
+- `Router` is not thread-safe.
 
 ## Performance
 
