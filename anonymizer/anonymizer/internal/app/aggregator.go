@@ -8,13 +8,14 @@ import (
 
 type Aggregator struct {
 	tableName string
-	query     bytes.Buffer
+	query     *bytes.Buffer
 	rowCount  int
 }
 
 func NewAggregator(tableName string) *Aggregator {
 	agg := &Aggregator{
 		tableName: tableName,
+		query:     bytes.NewBuffer(nil),
 	}
 	agg.ResetState()
 	return agg
@@ -25,7 +26,7 @@ func (agg *Aggregator) AppendRecord(r *LogRecord) error {
 		agg.query.WriteString(",")
 	}
 	fmt.Fprintf(
-		&agg.query,
+		agg.query,
 		`('%d:%s', %d, %d, %d, %d, %d, '%s', '%s', '%s', '%s')`,
 		r.KafkaPartition, strconv.FormatInt(r.KafkaOffset, 10),
 		r.TimestampEpochMilli,
@@ -42,8 +43,8 @@ func (agg *Aggregator) AppendRecord(r *LogRecord) error {
 	return nil
 }
 
-func (agg *Aggregator) Aggregate() *bytes.Buffer {
-	return &agg.query
+func (agg *Aggregator) Aggregate() string {
+	return agg.query.String()
 }
 
 func (agg *Aggregator) StateSize() int {
@@ -52,6 +53,6 @@ func (agg *Aggregator) StateSize() int {
 
 func (agg *Aggregator) ResetState() {
 	agg.query.Reset()
-	fmt.Fprintf(&agg.query, "INSERT INTO %s VALUES ", agg.tableName)
+	fmt.Fprintf(agg.query, "INSERT INTO %s VALUES ", agg.tableName)
 	agg.rowCount = 0
 }

@@ -1,8 +1,6 @@
 package app
 
 import (
-	"bytes"
-
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/plugin/kzap"
 	"go.uber.org/zap"
@@ -13,7 +11,7 @@ import (
 
 type App struct {
 	kafka *kgo.Client
-	pipe  *pipeline.Pipeline[*LogRecord, *bytes.Buffer]
+	pipe  *pipeline.Pipeline[*LogRecord, string]
 }
 
 func New(

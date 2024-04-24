@@ -133,7 +133,7 @@ services:
     restart: always
     environment:
       KAFKA_BOOTSTRAP_SERVERS: "broker:29092"
-      KAFKA_PRODUCER_DELAY_MS: 10
+      KAFKA_PRODUCER_DELAY_MS: 100
     depends_on:
       - broker
     container_name: log-producer

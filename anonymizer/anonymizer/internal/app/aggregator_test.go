@@ -35,7 +35,7 @@ func (s *AggregatorSuite) Test_SingleRecord() {
 	s.NoError(s.agg.AppendRecord(&record))
 	s.Equal(
 		`INSERT INTO http_log VALUES ('1:2', 3, 4, 5, 6, 7, 'HIT', 'GET', '1.2.3.4', '/api/v1/resources/42')`,
-		s.agg.Aggregate().String(),
+		s.agg.Aggregate(),
 	)
 }
 

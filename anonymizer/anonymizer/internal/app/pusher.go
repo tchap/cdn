@@ -1,13 +1,13 @@
 package app
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -35,7 +35,7 @@ func NewHTTPPostPusher(
 	}
 }
 
-func (pusher *HTTPPostPusher) Push(ctx context.Context, body *bytes.Buffer, windowSize int) error {
+func (pusher *HTTPPostPusher) Push(ctx context.Context, body string, windowSize int) error {
 	// Init HTTP client supporting retries.
 	client := retryablehttp.NewClient()
 	client.RetryMax = pusher.retryCount
@@ -56,7 +56,7 @@ func (pusher *HTTPPostPusher) Push(ctx context.Context, body *bytes.Buffer, wind
 
 	// Push to the destination URL.
 	req, err := retryablehttp.NewRequestWithContext(
-		ctx, http.MethodPost, pusher.url, body)
+		ctx, http.MethodPost, pusher.url, strings.NewReader(body))
 	if err != nil {
 		pusher.logger.Error("Failed to init HTTP request.", zap.Error(err))
 		return err

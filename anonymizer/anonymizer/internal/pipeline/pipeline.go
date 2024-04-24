@@ -160,7 +160,7 @@ func (p *Pipeline[MessageRecord, AggregationState]) aggregatorLoop() error {
 
 	var (
 		inputCh       <-chan *kgo.Record
-		agg           AggregationWindow[MessageRecord, AggregationState]
+		agg           = p.aggregationWindow
 		windowSize    int
 		commitOffsets map[int32]kgo.EpochOffset
 	)
@@ -210,6 +210,7 @@ func (p *Pipeline[MessageRecord, AggregationState]) aggregatorLoop() error {
 			if p.aggregationMaxSize > 0 && agg.StateSize() >= p.aggregationMaxSize {
 				logger.Warn(
 					"State buffer size exceeded, pausing message processing...",
+					zap.Int("buffer_size_bytes", agg.StateSize()),
 					zap.Int("limit_bytes", p.aggregationMaxSize),
 				)
 				inputCh = nil
