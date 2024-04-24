@@ -41,7 +41,7 @@ CREATE TABLE http_log_agg (
 )
 ENGINE = AggregatingMergeTree
 ORDER BY (cache_status, response_status, resource_id, remote_addr)
-SETTINGS index_granularity = 1024, index_granularity_bytes = 0;
+SETTINGS index_granularity = 1024;
 
 CREATE MATERIALIZED VIEW http_log_agg_mv
 TO http_log_agg
@@ -121,7 +121,19 @@ to fill the `uuid` column that the target table is being ordered by.
 ReplacingMergeTree engine that is being used is suitable for clearing out duplicate data
 in the background in order to save space, but it does not guarantee the absence of duplicates.
 
-XXX: Describe the database scheme.
+Regarding the table schema, the service pushes into a table that basically copies the message schema.
+Only `uuid` is added. Aggregations are then created in a separate table using a materialized view.
+This table is sorted by `(cache_status, response_status, resource_id, remote_addr)`. The order
+chosen is based on expected column cardinality of values. In case there are more resource IDs
+than `255^3` (max number of anonymized addresses), resource ID and remote address order can be swapped.
+
+A question arises whether aggregation using such a compound ordering key really makes sense
+as we can easily end up aggregating just a few requests in each row. This will case the aggregation
+table to basically double the space occupied by our data.
+
+In case we decided to drop `uuid`, we could just drop the materialized view and order the table
+containing the original data directly. This will cause us not having any way to deduplicate data
+to some extent, though.
 
 ## Production Grade TODO
 
