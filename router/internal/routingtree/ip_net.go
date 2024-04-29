@@ -1,6 +1,9 @@
 package routingtree
 
-import "fmt"
+import (
+	"fmt"
+	"math/bits"
+)
 
 // IPNet represents an IP subnet.
 //
@@ -67,18 +70,9 @@ func FirstBit(i uint64) uint64 {
 }
 
 func CommonPrefixLen(prefix, other uint64, max int) int {
-	if max == 0 {
-		panic("IPNet: CommonPrefixLen: max = 0")
-	}
-
-	var n int
-	for FirstBit(prefix) == FirstBit(other) {
-		n++
-		if n == max {
-			break
-		}
-		prefix <<= 1
-		other <<= 1
+	n := bits.LeadingZeros64(prefix ^ other)
+	if n > max {
+		n = max
 	}
 	return n
 }
