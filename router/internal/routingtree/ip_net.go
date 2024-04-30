@@ -1,6 +1,7 @@
 package routingtree
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/bits"
 )
@@ -56,13 +57,7 @@ func UInt64FromBytes(p []byte) uint64 {
 		panic(fmt.Errorf("unexpected byte slice length: %d", len(p)))
 	}
 
-	var out uint64
-	for i, b := range p {
-		d := uint64(b)
-		d <<= (7 - i) * 8
-		out |= d
-	}
-	return out
+	return binary.BigEndian.Uint64(p)
 }
 
 func FirstBit(i uint64) uint64 {
